@@ -1,0 +1,67 @@
+{
+  "name": "mute-experimental",
+  "version": "0.0.0",
+  "main": "index.js",
+  "repository": "https://github.com/barelyhuman/mute-experimental",
+  "author": "Reaper <ahoy@barelyhuman.dev>",
+  "license": "MIT",
+  "exports": {
+    ".": {
+      "require": "./index.js",
+      "import": "./index.mjs",
+      "types": "./index.d.ts"
+    },
+    "./react/babel": {
+      "require": "./react/babel.js",
+      "import": "./react/babel.mjs",
+      "types": "./react/babel.d.ts"
+    }
+  },
+  "scripts": {
+    "clean": "rm -rf dist",
+    "prebuild": "npm run clean",
+    "build": "tsup src --format cjs,esm --dts --clean",
+    "watch": "npm run build -- --watch src",
+    "postbuild": "shx cp package.json README.md LICENSE dist && json -I -f dist/package.json -e \"this.private=false; this.devDependencies=undefined; this.optionalDependencies=undefined; this.scripts=undefined; this.prettier=undefined; this.jest=undefined; this['lint-staged']=undefined;\"",
+    "prepublishOnly": "npm run build",
+    "test": "ava",
+    "link": "cd dist; yarn link"
+  },
+  "prettier": {
+    "bracketSpacing": false,
+    "semi": false,
+    "singleQuote": true,
+    "trailingComma": "es5",
+    "useTabs": false
+  },
+  "dependencies": {
+    "@babel/types": "^7.16.0"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.16.5",
+    "@babel/plugin-transform-react-jsx": "^7.16.5",
+    "@babel/preset-env": "^7.16.5",
+    "@babel/preset-react": "^7.16.5",
+    "@types/babel__core": "^7.1.17",
+    "@types/react": "^17.0.37",
+    "ava": "^3.15.0",
+    "json": "^11.0.0",
+    "np": "^7.6.0",
+    "prettier": "^2.5.1",
+    "shx": "^0.3.3",
+    "ts-node": "^10.4.0",
+    "tsup": "^5.11.4",
+    "typescript": "^4.5.4"
+  },
+  "ava": {
+    "extensions": {
+      "ts": "module"
+    },
+    "nonSemVerExperiments": {
+      "configurableModuleFormat": true
+    },
+    "nodeArguments": [
+      "--loader=ts-node/esm"
+    ]
+  }
+}
