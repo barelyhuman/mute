@@ -1,10 +1,9 @@
 {
-  "name": "mute-experimental",
+  "name": "mute",
   "version": "0.0.0",
-  "main": "index.js",
   "repository": "https://github.com/barelyhuman/mute-experimental",
-  "author": "Reaper <ahoy@barelyhuman.dev>",
   "license": "MIT",
+  "author": "Reaper <ahoy@barelyhuman.dev>",
   "exports": {
     ".": {
       "require": "./index.js",
@@ -17,15 +16,16 @@
       "types": "./react/babel.d.ts"
     }
   },
+  "main": "index.js",
   "scripts": {
-    "clean": "rm -rf dist",
     "prebuild": "npm run clean",
     "build": "tsup src --format cjs,esm --dts --clean",
-    "watch": "npm run build -- --watch src",
     "postbuild": "shx cp package.json README.md LICENSE dist && json -I -f dist/package.json -e \"this.private=false; this.devDependencies=undefined; this.optionalDependencies=undefined; this.scripts=undefined; this.prettier=undefined; this.jest=undefined; this['lint-staged']=undefined;\"",
+    "clean": "rm -rf dist",
+    "link": "cd dist; yarn link",
     "prepublishOnly": "npm run build",
     "test": "ava",
-    "link": "cd dist; yarn link"
+    "watch": "npm run build -- --watch src"
   },
   "prettier": {
     "bracketSpacing": false,
@@ -33,6 +33,17 @@
     "singleQuote": true,
     "trailingComma": "es5",
     "useTabs": false
+  },
+  "ava": {
+    "extensions": {
+      "ts": "module"
+    },
+    "nodeArguments": [
+      "--loader=ts-node/esm"
+    ],
+    "nonSemVerExperiments": {
+      "configurableModuleFormat": true
+    }
   },
   "dependencies": {
     "@babel/types": "^7.16.0"
@@ -52,16 +63,5 @@
     "ts-node": "^10.4.0",
     "tsup": "^5.11.4",
     "typescript": "^4.5.4"
-  },
-  "ava": {
-    "extensions": {
-      "ts": "module"
-    },
-    "nonSemVerExperiments": {
-      "configurableModuleFormat": true
-    },
-    "nodeArguments": [
-      "--loader=ts-node/esm"
-    ]
   }
 }
