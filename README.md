@@ -1,6 +1,6 @@
-#mute
+# mute
 
-> *mut*able *e*xperimental
+> **mut**able **e**xperimental
 
 This is a lab repository containing various experiments to work with mutable state in frameworks(starts with react)
 
