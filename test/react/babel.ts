@@ -41,6 +41,42 @@ test('Simple Transform', (t) => {
   t.snapshot(result.code)
 })
 
+test('Reactive props passed around components', (t) => {
+  const code = `
+    import * as React from "react"
+    import {$mut} from "mute"
+    
+    function Component({$count,...props}){
+      const {$count2:x,$count3} = props
+      const $x = $mut(x);
+        const onPress = () => {
+            $count += 1;
+            $x-=1
+            $count3*=2
+        }
+    
+        return <div>
+            <p>{$count}</p>
+            <p>{$x}</p>
+            <p>{$mut($count3)[0]}</p>
+            <button onClick={onPress}>Press</button>
+        </div>;
+    }
+
+    function ParentComponent(){
+      let $a = 0;
+      let $b = 999;
+      let $c = 1;
+      return <Component $count={$mut($a)} $count2={$mut($b)} $count3={$mut($c)}/>
+    }
+    `
+  const result = compile(code)
+  if (!result) {
+    return t.fail()
+  }
+  t.snapshot(result.code)
+})
+
 test.skip('Check Functional Scope', (t) => {
   const code = `
     import * as React from "react"

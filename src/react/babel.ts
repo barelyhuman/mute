@@ -3,8 +3,14 @@ import * as t from '@babel/types'
 const PACKAGE_NAME = 'mute'
 const COMPILE_TIME_FUNC_NAME = '$mut'
 
-interface ToModifyVariableI {
+type ToModifyVariableI = {
   raw: string
+}
+
+type IgnoreNode = {
+  type: string
+  start: number
+  end: number
 }
 
 let reactiveMemo = new Map()
@@ -25,6 +31,11 @@ export default function () {
           getterMemo = new Map()
           setterMemo = new Map()
 
+          // list of nodes to ignore for modifications
+          state.ignoreList = <IgnoreNode[]>[]
+
+          // to check if the compileFunc has been imported
+          // if yes then use the name / custom local alias
           state.compileFunc = {
             using: false,
             name: '',
@@ -33,18 +44,20 @@ export default function () {
       },
       ImportDeclaration(path: any, state: any) {
         const {using, name} = isUsingMute(path.node)
-        if (using) {
-          state.compileFunc.using = true
-          state.compileFunc.name = name as string
-          path.remove()
+        if (!using) {
+          return
         }
+
+        state.compileFunc.using = true
+        state.compileFunc.name = name as string
+        path.remove()
       },
       FunctionDeclaration(path: any, state: any) {
-        toMod = toMod.concat(getReactiveVariablesFromScope(path.scope))
+        toMod = toMod.concat(getReactiveVariablesFromScope(path.scope, state))
         transformToStateByScope(path, toMod, state)
       },
       ArrowFunctionExpression(path: any, state: any) {
-        toMod = toMod.concat(getReactiveVariablesFromScope(path.scope))
+        toMod = toMod.concat(getReactiveVariablesFromScope(path.scope, state))
         transformToStateByScope(path, toMod, state)
       },
     },
@@ -60,21 +73,46 @@ function transformToStateByScope(
   // function. To prevent creating state hooks outside a function
   path.traverse({
     Identifier(path: any) {
+      const inIgnoreList = state.ignoreList.findIndex((x: IgnoreNode) => {
+        return (
+          x.start === path.node.start &&
+          x.end === path.node.end &&
+          x.type === path.node.type
+        )
+      })
+
+      if (inIgnoreList > -1) {
+        return
+      }
+
+      if (
+        state.compileFunc.using &&
+        path.node.name === state.compileFunc.name
+      ) {
+        return
+      }
+
+      if (is$mutCall(path.parentPath.node, state)) {
+        path.parentPath.replaceWith(path.node)
+        state.ignoreList.push(<IgnoreNode>{
+          type: path.parentPath.node.type,
+          start: path.parentPath.node.start,
+          end: path.parentPath.node.end,
+        })
+        return
+      }
+
       if (
         isReactiveIdentifier(path.node.name, toMod) &&
         !t.isVariableDeclarator(path.parentPath) &&
-        !t.isAssignmentExpression(path.parentPath)
+        !t.isAssignmentExpression(path.parentPath) &&
+        !t.isObjectProperty(path.parentPath)
       ) {
-        if (t.isMemberExpression(path.parentPath)) {
-          const {node}: {node: t.MemberExpression} = path.parentPath
-          if (
-            t.isNumericLiteral(node.property) &&
-            (node.property.value === 0 || node.property.value === 1)
-          ) {
-            return
-          }
+        if (isCompiledSetterGetter(path.parentPath)) {
+          return
         }
 
+        // console.log(path.node)
         path.replaceWith(getGetterExpressionForReactive(path.node.name))
       }
     },
@@ -110,10 +148,9 @@ function transformReactiveDeclarations(
 
     if (
       t.isCallExpression(declaration.init) &&
-      t.isIdentifier(declaration.init.callee) &&
-      state.compileFunc.using &&
-      declaration.init.callee.name === state.compileFunc.name
+      is$mutCall(declaration.init, state)
     ) {
+      // @ts-ignore
       declaration.init = declaration.init.arguments[0] as t.Expression
       continue
     }
@@ -223,13 +260,15 @@ function isReadingReactiveValue(
   return true
 }
 
-function getReactiveVariablesFromScope(scope: any) {
+function getReactiveVariablesFromScope(scope: any, state: any) {
   const toMod: ToModifyVariableI[] = []
   Object.keys(scope.bindings).forEach((binding) => {
+    if (state.compileFunc.using && binding === state.compileFunc.name) {
+      return
+    }
     if (/^\$/.test(binding)) {
       // add to list of identifiers to compare and replace
       // (not using scope replace to avoid shadow variables being replaced)
-      const normName = normalizeName(binding)
       toMod.push({
         raw: binding,
       })
@@ -288,4 +327,36 @@ function getGetterExpressionForReactive(identifierName: string) {
   )
   getterMemo.set(identifierName, memExp)
   return memExp
+}
+
+function is$mutCall(node: t.CallExpression, state: any) {
+  if (
+    !(
+      t.isCallExpression(node) &&
+      t.isIdentifier(node.callee) &&
+      state.compileFunc.using &&
+      node.callee.name === state.compileFunc.name
+    )
+  ) {
+    return false
+  }
+  return true
+}
+
+function isCompiledSetterGetter(path: any) {
+  if (!t.isMemberExpression(path.node)) {
+    return false
+  }
+
+  const {node}: {node: t.MemberExpression} = path
+  if (
+    !(
+      t.isNumericLiteral(node.property) &&
+      (node.property.value === 0 || node.property.value === 1)
+    )
+  ) {
+    return false
+  }
+
+  return true
 }
