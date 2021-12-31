@@ -106,7 +106,8 @@ function transformToStateByScope(
         isReactiveIdentifier(path.node.name, toMod) &&
         !t.isVariableDeclarator(path.parentPath) &&
         !t.isAssignmentExpression(path.parentPath) &&
-        !t.isObjectProperty(path.parentPath)
+        !t.isObjectProperty(path.parentPath) &&
+        !t.isJSXAttribute(path.parentPath.parentPath)
       ) {
         if (isCompiledSetterGetter(path.parentPath)) {
           return
@@ -150,12 +151,11 @@ function transformReactiveDeclarations(
       t.isCallExpression(declaration.init) &&
       is$mutCall(declaration.init, state)
     ) {
-      // @ts-ignore
       declaration.init = declaration.init.arguments[0] as t.Expression
       continue
     }
 
-    // convert to `const [x,setX] = React.useState()`
+    // convert `let $a = 1` to `const $a = React.useState(1)`
     node.declarations[i] = t.variableDeclarator(
       t.identifier(declaration.id.name),
       t.callExpression(

@@ -67,7 +67,7 @@ test('Reactive props passed around components', (t) => {
       let $a = 0;
       let $b = 999;
       let $c = 1;
-      return <Component $count={$mut($a)} $count2={$mut($b)} $count3={$mut($c)}/>
+      return <Component $count={$a} $count2={$mut($b)} $count3={$mut($c)}/>
     }
     `
   const result = compile(code)
