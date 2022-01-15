@@ -77,7 +77,7 @@ test('Reactive props passed around components', (t) => {
   t.snapshot(result.code)
 })
 
-test.skip('Check Functional Scope', (t) => {
+test('Check Functional Scope', (t) => {
   const code = `
     import * as React from "react"
     
@@ -104,7 +104,7 @@ test.skip('Check Functional Scope', (t) => {
   t.snapshot(result.code)
 })
 
-test.skip('Check Arrow Function Scope', (t) => {
+test('Check Arrow Function Scope', (t) => {
   const code = `
     import * as React from "react";
 
@@ -134,7 +134,7 @@ test.skip('Check Arrow Function Scope', (t) => {
   t.snapshot(result.code)
 })
 
-test.skip('Multi Component Scope', (t) => {
+test('Multi Component Scope', (t) => {
   const code = `
     import * as React from "react";
 
@@ -180,7 +180,7 @@ test.skip('Multi Component Scope', (t) => {
   t.snapshot(result.code)
 })
 
-test.skip('Hook Function and useEffect dep', (t) => {
+test('Hook Function and useEffect dep', (t) => {
   const code = `
     import * as React from "react";
 
@@ -211,7 +211,7 @@ test.skip('Hook Function and useEffect dep', (t) => {
   t.snapshot(result.code)
 })
 
-test.skip('Singular Binary Expressions', (t) => {
+test('Singular Binary Expressions', (t) => {
   const code = `
   import React from "react";
   
@@ -238,7 +238,7 @@ test.skip('Singular Binary Expressions', (t) => {
   t.snapshot(result.code)
 })
 
-test.skip('Object Update', (t) => {
+test('Object Update', (t) => {
   const code = `
   import * as React from "react";
   
@@ -267,7 +267,7 @@ test.skip('Object Update', (t) => {
   t.snapshot(result.code)
 })
 
-test.skip('Array Update', (t) => {
+test('Array Update', (t) => {
   const code = `
   import * as React from "react";
   
@@ -291,6 +291,37 @@ test.skip('Array Update', (t) => {
   }
   `
 
+  const result = compile(code)
+  if (!result) {
+    return t.fail()
+  }
+  t.snapshot(result.code)
+})
+
+test('functional state update', (t) => {
+  const code = `
+  import * as React from "react";
+  
+  function App() {
+    let $users = [{ name: "reaper" }];
+
+    const updateUser = () => {
+      $user = (x) => {
+        const y = x.slice()
+        y[0].name = "barelyhuman"
+        return y;
+      };
+    };
+
+    return (
+      <>
+      {$users.map(user=>{
+        return <p>{user.name}</p>
+      })}
+      <button onClick={updateUser}>Click Me</button>
+      </>
+    );
+  }`
   const result = compile(code)
   if (!result) {
     return t.fail()
